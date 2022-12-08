@@ -109,7 +109,7 @@ private:
         Query query_words;
         for (const string& word : SplitIntoWordsNoStop(text)) {
             if (word[0]!='-'){
-             query_words.plus_words.insert(word);   
+                query_words.plus_words.insert(word);   
             } else{
                 query_words.minus_words.insert(word.substr(1));
             }
@@ -117,17 +117,21 @@ private:
         return query_words;
     }
 
+    double CalcIDF (const string& word) const {
+        return log(1.0*document_count_/word_to_document_freqs_.at(word).size());
+    }
+    
     vector<Document> FindAllDocuments(const Query& query_words) const {
         vector<Document> matched_documents;
         map<int,double> document_to_relevance;
         for (const string& plus : query_words.plus_words){
             if (word_to_document_freqs_.count(plus)==0){
-              continue;  
+				continue;  
             }
-               double idf=log(1.0*document_count_/word_to_document_freqs_.at(plus).size());
-               for (const auto& [id, tf] : word_to_document_freqs_.at(plus)){
-                   document_to_relevance[id] += tf * idf;
-               } 
+            double idf=CalcIDF(plus);
+            for (const auto& [id, tf] : word_to_document_freqs_.at(plus)){
+				document_to_relevance[id] += tf * idf;
+            } 
             
         }
         
@@ -135,7 +139,7 @@ private:
             if (word_to_document_freqs_.count(minus) == 0) {
                 continue;
             }
-            for (const auto [id, rel] : word_to_document_freqs_.at(minus)) {
+            for (const auto [id, _] : word_to_document_freqs_.at(minus)) {
                 document_to_relevance.erase(id);
             }
         }
