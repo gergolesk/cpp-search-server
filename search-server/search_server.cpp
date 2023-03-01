@@ -1,4 +1,3 @@
-﻿//Вставьте сюда своё решение из урока «Очередь запросов» темы «Стек, очередь, дек».‎
 #include "search_server.h"
 #include "string_processing.h"
 
@@ -20,9 +19,10 @@ void SearchServer::AddDocument(int document_id, const string& document, Document
     const double inv_word_count = 1.0 / words.size();
     for (const string& word : words) {
         word_to_document_freqs_[word][document_id] += inv_word_count;
+        document_to_word_freqs_[document_id][word] += inv_word_count;
     }
     documents_.emplace(document_id, DocumentData{ ComputeAverageRating(ratings), status });
-    document_ids_.push_back(document_id);
+    document_ids_.insert(document_id);
 }
 
 vector<Document> SearchServer::FindTopDocuments(const string& raw_query, DocumentStatus status) const {
@@ -40,8 +40,34 @@ int SearchServer::GetDocumentCount() const {
     return SearchServer::documents_.size();
 }
 
-int SearchServer::GetDocumentId(int index) const {
+/*int SearchServer::GetDocumentId(int index) const {
     return SearchServer::document_ids_.at(index);
+}*/
+
+set<int>::iterator SearchServer::begin() {
+    return document_ids_.begin();
+}
+
+set<int>::iterator SearchServer::end() {
+    return document_ids_.end();
+}
+
+const map<string, double>& SearchServer::GetWordFrequencies(int document_id) const {
+    static const map<string, double> empty_map;
+    return document_to_word_freqs_.count(document_id) > 0 ? document_to_word_freqs_.at(document_id) : empty_map;
+}
+
+void SearchServer::RemoveDocument(int document_id) {
+    if (document_ids_.count(document_id) == 1) {
+        for (auto [word, freq] : GetWordFrequencies(document_id)) {
+            word_to_document_freqs_[word].erase(document_id);           
+        
+        }
+        document_ids_.erase(document_id);
+        documents_.erase(document_id);
+        document_to_word_freqs_.erase(document_id);
+    }
+    return;
 }
 
 tuple<vector<string>, DocumentStatus> SearchServer::MatchDocument(const string& raw_query,
