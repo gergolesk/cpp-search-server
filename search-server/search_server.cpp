@@ -1,3 +1,4 @@
+//Вставьте сюда своё решение из урока «Очередь запросов» темы «Стек, очередь, дек».‎
 #include "search_server.h"
 #include "string_processing.h"
 
@@ -60,8 +61,10 @@ const map<string, double>& SearchServer::GetWordFrequencies(int document_id) con
 void SearchServer::RemoveDocument(int document_id) {
     if (document_ids_.count(document_id) == 1) {
         for (auto [word, freq] : GetWordFrequencies(document_id)) {
-            word_to_document_freqs_[word].erase(document_id);           
-        
+            word_to_document_freqs_[word].erase(document_id);
+            if (word_to_document_freqs_.count(word) == 1 && word_to_document_freqs_.at(word).size() == 0) {
+                word_to_document_freqs_.erase(word);
+            }        
         }
         document_ids_.erase(document_id);
         documents_.erase(document_id);
