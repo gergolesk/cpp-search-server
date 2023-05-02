@@ -1,48 +1,67 @@
 #pragma once
-#include <deque>
-#include <vector>
-#include <string>
+
 #include "document.h"
+#include "paginator.h"
+#include "read_input_functions.h"
+#include "request_queue.h"
 #include "search_server.h"
+#include "string_processing.h"
 
 class RequestQueue {
 public:
     explicit RequestQueue(const SearchServer& search_server);
-
-    // сделаем "обёртки" для всех методов поиска, чтобы сохранять результаты для нашей статистики
-
+    
+    template<typename Query>
+    int SetTime(const Query& prev);
+    
+ 
     template <typename DocumentPredicate>
     std::vector<Document> AddFindRequest(const std::string& raw_query, DocumentPredicate document_predicate);
+    std::vector<Document> AddFindRequest(const std::string& raw_query, DocumentStatus status) ;
+    std::vector<Document> AddFindRequest(const std::string& raw_query) ;
 
-    std::vector<Document> AddFindRequest(const std::string& raw_query, DocumentStatus status);
-
-    std::vector<Document> AddFindRequest(const std::string& raw_query); 
-
-    int GetNoResultRequests() const;
-
+    int GetNoResultRequests() const ;
 private:
     struct QueryResult {
-        std::vector<Document> result;
+        int time;
+        bool empty_request;
+        // РѕРїСЂРµРґРµР»РёС‚Рµ, С‡С‚Рѕ РґРѕР»Р¶РЅРѕ Р±С‹С‚СЊ РІ СЃС‚СЂСѓРєС‚СѓСЂРµ
     };
-
     std::deque<QueryResult> requests_;
     const static int min_in_day_ = 1440;
-    int empty_count_ = 0;
+    // РІРѕР·РјРѕР¶РЅРѕ, Р·РґРµСЃСЊ РІР°Рј РїРѕРЅР°РґРѕР±РёС‚СЃСЏ С‡С‚Рѕ-С‚Рѕ РµС‰С‘
     const SearchServer& search_server_;
 };
 
+
 template <typename DocumentPredicate>
 std::vector<Document> RequestQueue::AddFindRequest(const std::string& raw_query, DocumentPredicate document_predicate) {
-    auto result = search_server_.FindTopDocuments(raw_query, document_predicate);
-    if (requests_.size() >= min_in_day_) {
-        if (requests_[0].result.size() != 0) {
-            --empty_count_;
-            requests_.pop_back();
+    QueryResult local;
+    std::vector<Document> find_local = search_server_.FindTopDocuments(raw_query, document_predicate);
+    
+    local.empty_request = find_local.empty();
+    
+    
+    if (requests_.size() != 0) {
+        
+        local.time = SetTime(requests_.back());
+        if (requests_.size() == min_in_day_){
+            requests_.pop_front();
         }
+        requests_.push_back(local);
+    } else {
+        local.time = 1;
+        requests_.push_back(local);
     }
-    if (result.empty()) {
-        ++empty_count_;
+    return find_local;
+}
+
+
+template<typename Query>
+int RequestQueue::SetTime(const Query& prev) {
+    if (prev.time < min_in_day_) {
+        return 1 + prev.time;
+    } else {
+        return 1;
     }
-    requests_.push_front({ result });
-    return result;
 }

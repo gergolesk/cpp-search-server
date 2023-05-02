@@ -1,10 +1,11 @@
 #include "string_processing.h"
+#include "log_duration.h"
 
+#include <iostream>
 using namespace std;
 
 
-vector<string> SplitIntoWords(string text)
-{
+vector<string> SplitIntoWords(const string_view text) {
     vector<string> words;
     string word;
     for (const char c : text) {
@@ -13,8 +14,7 @@ vector<string> SplitIntoWords(string text)
                 words.push_back(word);
                 word.clear();
             }
-        }
-        else {
+        } else {
             word += c;
         }
     }

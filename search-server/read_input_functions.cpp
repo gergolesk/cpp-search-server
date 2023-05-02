@@ -1,8 +1,14 @@
-#include "read_input_functions.h"
+#include <string>
+#include <iostream>
+#include <vector>
 
-std::string ReadLine() {
-    std::string s;
-    std::getline(std::cin, s);
+#include "document.h"
+
+using namespace std;
+
+string ReadLine() {
+    string s;
+    getline(cin, s);
     return s;
 }
 

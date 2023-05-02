@@ -1,15 +1,10 @@
 #pragma once
 
-#include <numeric>
-#include <string>
 #include <vector>
+#include <string>
 #include <set>
 
-std::vector<std::string> SplitIntoWords(std::string text);
-
-template <typename StringContainer>
-std::set<std::string> MakeUniqueNonEmptyStrings(const StringContainer& strings);
-
+std::vector<std::string> SplitIntoWords(const std::string_view text);
 
 template <typename StringContainer>
 std::set<std::string> MakeUniqueNonEmptyStrings(const StringContainer& strings) {
