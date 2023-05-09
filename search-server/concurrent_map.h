@@ -18,52 +18,40 @@ class ConcurrentMap {
 public:
     static_assert(std::is_integral_v<Key>, "ConcurrentMap supports only integer keys"s);
 
-    struct Access {
-    
-    Access(mutex& mut, Value& value)
-        :localm(mut), ref_to_value(value){
-        //localm.unlock();
+    struct Bucket {
+        std::mutex value_mutex;
+        std::map<Key, Value> data;
+    };
 
-    }
-    ~Access() {
-        localm.unlock();
-    }
-        mutex& localm;
+    struct Access {    
+        std::lock_guard<std::mutex> localm;
         Value& ref_to_value;
-        
+
+        Access(const Key& key, Bucket& bucket)
+            : localm(bucket.value_mutex),
+            ref_to_value(bucket.data[key]) {
+        }               
     };
 
     explicit ConcurrentMap(size_t bucket_count)
-        :muts(bucket_count), maps(bucket_count) {
+        : bucket_(bucket_count) {
             
         }
 
-    Access operator[](const Key& key){
-        
-        atomic_uint64_t ks = key % muts.size();
-        muts[ks].lock();
-        
-        return {muts[ks], maps[ks][key]};
+    Access operator[](const Key& key){        
+        auto& bucket = bucket_[static_cast<uint64_t>(key) % bucket_.size()];              
+        return {key, bucket};
     }
     
     map<Key, Value> BuildOrdinaryMap() {
-    
-        map<Key, Value> ret;
-        
-        for(atomic_size_t i = 0; i < maps.size(); i.fetch_add(1)) {
-            
-            for(auto& a : maps[i]) {
-                lock_guard lggt(muts[i]);
-                ret[a.first] = a.second;
-
-            }
+        std::map<Key, Value> result;
+        for (auto& [value_mutex, data] : bucket_) {
+            std::lock_guard g(value_mutex);
+            result.insert(data.begin(), data.end());
         }
-        
-        return ret;
+        return result;
     }
-    
 
 private:
-    vector<mutex> muts;
-    vector<map<Key, Value>> maps;
+    std::vector<Bucket> bucket_;
 };
