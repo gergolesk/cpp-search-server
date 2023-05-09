@@ -1,7 +1,7 @@
 #include "search_server.h"
 #include "log_duration.h"
 
-#include<iostream>
+#include <iostream>
 
 using namespace std;
 
@@ -31,30 +31,6 @@ void SearchServer::AddDocument(int document_id, const string_view document, Docu
     documents_.emplace(document_id, DocumentData{ComputeAverageRating(ratings), status});
     document_ids_.insert(document_id);
 }
-
-vector<Document> SearchServer::FindTopDocuments(std::execution::parallel_policy, const string_view raw_query, DocumentStatus status) const {
-    std::execution::parallel_policy policy;
-    return FindTopDocuments(policy, raw_query, [status](int document_id, DocumentStatus document_status, int rating) {
-        return document_status == status;
-    });
-}
-
-vector<Document> SearchServer::FindTopDocuments(std::execution::parallel_policy, const string_view raw_query) const {
-    std::execution::parallel_policy policy;
-    return FindTopDocuments(policy, raw_query, DocumentStatus::ACTUAL);
-}
-
-
-vector<Document> SearchServer::FindTopDocuments(std::execution::sequenced_policy, const string_view raw_query, DocumentStatus status) const {
-    return FindTopDocuments(raw_query, [status](int document_id, DocumentStatus document_status, int rating) {
-        return document_status == status;
-    });
-}
-
-vector<Document> SearchServer::FindTopDocuments(std::execution::sequenced_policy, const string_view raw_query) const {
-    return FindTopDocuments(raw_query, DocumentStatus::ACTUAL);
-}
-
 
 vector<Document> SearchServer::FindTopDocuments(const string_view raw_query, DocumentStatus status) const {
     return FindTopDocuments(raw_query, [status](int document_id, DocumentStatus document_status, int rating) {
